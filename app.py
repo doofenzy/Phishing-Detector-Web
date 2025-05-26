@@ -1,3 +1,4 @@
+# import all modules needed
 from flask import Flask, render_template, request, jsonify
 import joblib
 import tldextract
@@ -6,7 +7,7 @@ import re
 from urllib.parse import urlparse
 
 app = Flask(__name__)
-model = joblib.load("model_v1.6.pkl")
+model = joblib.load("model.pkl") #load the model file
 
 def extract_features(url):
     parsed = urlparse(url)
@@ -67,8 +68,7 @@ def predict():
     if not data or 'url' not in data:
         return jsonify({'error': 'No URL provided'}), 400
 
-    url = data['url']  # Extract the URL string from the dictionary
-
+    url = data['url'] 
     features = extract_features(url)
     X = pd.DataFrame([features]) 
     prediction = model.predict(X)[0]
