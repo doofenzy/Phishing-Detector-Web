@@ -1,13 +1,16 @@
+from flask import Flask, render_template, request, jsonify
 import joblib
 import tldextract
 import pandas as pd
 import re
 from urllib.parse import urlparse
 
+app = Flask(__name__)
+model = joblib.load("model_v1.6.pkl")
+
 def extract_features(url):
     parsed = urlparse(url)
     ext = tldextract.extract(url)
-
     hostname = parsed.hostname or ""
     path = parsed.path or ""
 
@@ -53,11 +56,29 @@ def extract_features(url):
 
     return features
 
+@app.route("/")
+def index():
+    return render_template('index.html')
 
-model = joblib.load("model_v1.6.pkl")
-url = input("Enter URL: ")
-features = extract_features(url)
-X = pd.DataFrame([features])  
-prediction = model.predict(X)[0]
+@app.route("/predict", methods=['POST'])
+def predict():
+    data = request.get_json()
 
-print("Prediction:", "Phishing" if prediction == 1 else "Legitimate")
+    if not data or 'url' not in data:
+        return jsonify({'error': 'No URL provided'}), 400
+
+    url = data['url']  # Extract the URL string from the dictionary
+
+    features = extract_features(url)
+    X = pd.DataFrame([features]) 
+    prediction = model.predict(X)[0]
+    res = {}
+
+    if prediction == 1:
+        res['prediction'] = "Phishing"
+    else:
+        res['prediction'] = "Legitimate"
+    return jsonify(res)
+
+if __name__ == "__main__":
+    app.run()
